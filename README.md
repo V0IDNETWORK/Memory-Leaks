@@ -2,6 +2,10 @@
 
 <div align="center">
 
+![C++](https://img.shields.io/badge/C%2B%2B-Modern-blue?style=for-the-badge&logo=c%2B%2B)
+![Memory Safety](https://img.shields.io/badge/Memory-Safe-success?style=for-the-badge)
+![RAII](https://img.shields.io/badge/RAII-Core%20Concept-orange?style=for-the-badge)
+
 # Modern C++ Memory Safety Guide
 
 A deep dive into memory management, RAII, smart pointers, ownership models, and leak prevention techniques.
@@ -38,8 +42,6 @@ The most dangerous thing about memory leaks is that they are often silent.
 # What Is a Memory Leak?
 
 A memory leak happens when dynamically allocated memory is never released.
-
-Example:
 
 ```cpp
 void leak()
@@ -79,8 +81,6 @@ The idea:
 - Objects acquire resources in constructors
 - Objects release resources in destructors
 
-Example:
-
 ```cpp
 class File
 {
@@ -107,51 +107,37 @@ This guarantees cleanup.
 
 # Smart Pointers
 
-Include:
-
-```cpp
-#include <memory>
-```
-
----
-
-# `std::unique_ptr`
-
-Single ownership.
+## `std::unique_ptr`
 
 ```cpp
 auto player = std::make_unique<Player>();
 ```
 
-Recommended by default.
+Single ownership. Recommended by default.
 
 ---
 
-# `std::shared_ptr`
-
-Shared ownership.
+## `std::shared_ptr`
 
 ```cpp
 auto texture = std::make_shared<Texture>();
 ```
 
-Useful when multiple systems need access to the same object.
+Shared ownership across multiple systems.
 
 ---
 
-# `std::weak_ptr`
-
-Used to avoid circular references.
+## `std::weak_ptr`
 
 ```cpp
 std::weak_ptr<Node> parent;
 ```
 
+Used to avoid circular references.
+
 ---
 
 # Circular References
-
-Problematic example:
 
 ```cpp
 a->next = b;
@@ -160,7 +146,7 @@ b->next = a;
 
 If both are `shared_ptr`, memory may never be released.
 
-Use `weak_ptr` when ownership is not required.
+Use `weak_ptr` where ownership is not required.
 
 ---
 
@@ -179,8 +165,6 @@ void process()
 }
 ```
 
-If `riskyFunction()` throws, memory leaks.
-
 Better:
 
 ```cpp
@@ -194,17 +178,64 @@ void process()
 
 ---
 
-# STL Containers
+# Memory Ownership Diagrams
 
-Prefer:
+## Stack vs Heap
 
-- `std::vector`
-- `std::array`
-- `std::string`
-- `std::map`
-- `std::unordered_map`
+```text
+STACK MEMORY                    HEAP MEMORY
+-------------------            -------------------
+Automatic Lifetime             Manual / Managed Lifetime
+Fast Allocation                Dynamic Allocation
+Scope-Based Cleanup            Requires Ownership Model
+Cache Friendly                 Flexible Lifetime
+```
 
-Instead of manual memory management.
+---
+
+## Ownership Graph
+
+```text
+Application
+    |
+    +--> unique_ptr<Game>
+              |
+              +--> unique_ptr<Player>
+              |
+              +--> shared_ptr<Texture>
+                         |
+                  shared across systems
+```
+
+---
+
+# Bad vs Good Examples
+
+## BAD
+
+```cpp
+Player* player = new Player();
+```
+
+## GOOD
+
+```cpp
+auto player = std::make_unique<Player>();
+```
+
+---
+
+# Example Project Structure
+
+```text
+/examples
+    raw_pointer_leak.cpp
+    unique_ptr_fix.cpp
+    shared_ptr_cycle.cpp
+    weak_ptr_solution.cpp
+    raii_file_wrapper.cpp
+    asan_demo.cpp
+```
 
 ---
 
@@ -228,6 +259,38 @@ Useful for Windows debugging and memory inspection.
 
 ---
 
+# GitHub Actions Example
+
+```yaml
+name: C++ Sanitizer Build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Build with ASan
+      run: |
+        g++ -fsanitize=address -g main.cpp -o app
+```
+
+---
+
+# Performance Comparison
+
+| Method | Leak Safe | Performance | Complexity |
+|---|---|---|---|
+| Raw pointers | ❌ | Very Fast | Dangerous |
+| unique_ptr | ✅ | Very Fast | Safe |
+| shared_ptr | ✅ | Moderate | Flexible |
+| weak_ptr | ✅ | Very Fast | Observer Only |
+
+---
+
 # Best Practices
 
 Always prefer:
@@ -242,8 +305,6 @@ Avoid unless necessary:
 
 - Raw `new`
 - Raw `delete`
-- Manual ownership transfer
 - Naked owning pointers
 
 ---
-
